@@ -32,8 +32,10 @@ const securityUtils = {
     if (typeof id !== "string") return false;
     return /^[a-zA-Z0-9\-_]{1,50}$/.test(id);
   },
-
-  
+  // Validate blob content type
+  validateContentType: (blob, expectedType) => {
+    return blob.type === expectedType;
+  },
 };
 export const cancelPayment = createAsyncThunk(
   "/order/cancelPayment",
