@@ -257,32 +257,52 @@ export const getOrderReport = createAsyncThunk(
 
 export const generateInvoice = createAsyncThunk(
   "/order/generateInvoice",
-  async (id, { getState }) => {
-    const auth = getState().auth;
-    const token = auth.token;
-    const response = await axios.get(
-      `${import.meta.env.VITE_API_URL}orders/invoice/${id}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        responseType: "blob",
+  async (id, { getState, rejectWithValue }) => {
+    try {
+      // FIX 1: Validate and sanitize ID parameter
+      if (!securityUtils.validateId(id)) {
+        return rejectWithValue("Invalid order ID format");
       }
-    );
 
-    const blob = new Blob([response.data], {
-      type: "application/pdf",
-    });
-    const url = window.URL.createObjectURL(blob);
+      const auth = getState().auth;
+      const token = auth.token;
 
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "invoice.pdf");
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+      if (!token) {
+        return rejectWithValue("Authentication required");
+      }
 
-    window.URL.revokeObjectURL(url);
+      // FIX 2: Use sanitized ID in API call
+      const sanitizedId = securityUtils.sanitizeInput(id);
+
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}orders/invoice/${sanitizedId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          responseType: "blob",
+          timeout: 30000, // Add timeout
+        }
+      );
+
+      // FIX 3: Validate response
+      if (!response.data || response.data.size === 0) {
+        throw new Error("No invoice data received");
+      }
+
+      // FIX 4: Use secure download with sanitized filename
+      const safeFilename = `invoice_${sanitizedId}.pdf`;
+      securityUtils.safeDownload(
+        response.data,
+        safeFilename,
+        "application/pdf"
+      );
+
+      return { success: true };
+    } catch (error) {
+      console.error("Invoice generation failed:", error);
+      return rejectWithValue(error.message);
+    }
   }
 );
 
