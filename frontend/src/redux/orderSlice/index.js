@@ -9,6 +9,27 @@ const initialState = {
   placedOrderId: null,
 };
 
+
+
+const securityUtils = {
+  // Sanitize input to prevent XSS
+  sanitizeInput: (input) => {
+    if (typeof input !== 'string') return '';
+    return input.replace(/[<>\"'&]/g, (match) => {
+      const entities = {
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#x27;',
+        '&': '&amp;'
+      };
+      return entities[match];
+    });
+  },
+
+  
+
+};
 export const cancelPayment = createAsyncThunk(
   "/order/cancelPayment",
   async ({ orderId }, { getState }) => {
