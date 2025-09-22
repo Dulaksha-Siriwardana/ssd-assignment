@@ -14,21 +14,26 @@ const initialState = {
 const securityUtils = {
   // Sanitize input to prevent XSS
   sanitizeInput: (input) => {
-    if (typeof input !== 'string') return '';
+    if (typeof input !== "string") return "";
     return input.replace(/[<>\"'&]/g, (match) => {
       const entities = {
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#x27;',
-        '&': '&amp;'
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#x27;",
+        "&": "&amp;",
       };
       return entities[match];
     });
   },
 
-  
+  // Validate ID parameter (only allow alphanumeric and hyphens)
+  validateId: (id) => {
+    if (typeof id !== "string") return false;
+    return /^[a-zA-Z0-9\-_]{1,50}$/.test(id);
+  },
 
+  
 };
 export const cancelPayment = createAsyncThunk(
   "/order/cancelPayment",
