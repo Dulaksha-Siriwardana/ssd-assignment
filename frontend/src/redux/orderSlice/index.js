@@ -215,32 +215,43 @@ export const deleteOrder = createAsyncThunk(
 
 export const getOrderReport = createAsyncThunk(
   "/order/getOrderReport",
-  async (_, { getState }) => {
-    const auth = getState().auth;
-    const token = auth.token;
-    const response = await axios.get(
-      `${import.meta.env.VITE_API_URL}orders/gen-report`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        responseType: "blob",
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const auth = getState().auth;
+      const token = auth.token;
+
+      if (!token) {
+        return rejectWithValue("Authentication required");
       }
-    );
 
-    const blob = new Blob([response.data], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
-    const url = window.URL.createObjectURL(blob);
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}orders/gen-report`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          responseType: "blob",
+          timeout: 30000, // ? Add custom timeout
+        }
+      );
 
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "orders_report.xlsx");
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+      // Validate response
+      if (!response.data || response.data.size === 0) {
+        throw new Error("No data received");
+      }
 
-    window.URL.revokeObjectURL(url);
+      // Use secure download function
+      securityUtils.safeDownload(
+        response.data,
+        "orders_report.xlsx",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      );
+
+      return { success: true };
+    } catch (error) {
+      console.error("Order report generation failed:", error);
+      return rejectWithValue(error.message);
+    }
   }
 );
 
