@@ -61,7 +61,78 @@ export const sendEmail = async (email, itemId, qnt, date) => {
       throw new Error('Rate limit exceeded. Try again later.');
     }
     
+    const transporter1 = nodemailer.createTransporter({
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.EMAIL,
+        pass: process.env.APP_PASS,
+      },
+    });
     
+    // Generate secure token with supplier context
+    const token = await generateSecureToken(email, itemId);
+    
+    // FIX 3: SECURE CONFIRMATION LINK
+    const confirmationLink = `${process.env.FRONTEND_URL}/supplier-order/${encodeURIComponent(token)}`;
+    
+    const mailGenerator = new Mailgen({
+      theme: "default",
+      product: {
+        name: "Fashion Retail Store",
+        link: process.env.FRONTEND_URL,
+      },
+    });
+    
+    const emailContent = {
+      body: {
+        intro: "We would like to inform you that we need to order stock for the following item.",
+        table: {
+          data: [
+            { key: "Item Code", value: itemId },
+            { key: "Quantity", value: qnt },
+            { key: "Required Date", value: date },
+            {
+              key: "Confirmation Link",
+              value: confirmationLink
+            },
+          ],
+        },
+        outro: `
+          This link will expire in 24 hours for security purposes.
+          Thank you for your prompt attention to this matter.`,
+      },
+    };
+    
+    const emailBody = mailGenerator.generate(emailContent);
+    
+    const mailOptions = {
+      from: process.env.EMAIL,
+      to: email,
+      subject: "New Stock Order - Action Required",
+      html: emailBody,
+    };
+    
+    const info = await transporter1.sendMail(mailOptions);
+    console.log("Email sent:", info.response);
+    
+    // Save token with expiration
+    const supplierTokenData = {
+      token,
+      itemId,
+      quantity: qnt,
+      date,
+      supplier: supplier._id,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+    };
+    
+    await addSupplierToken(supplierTokenData);
+    
+    return {
+      status: "success",
+      message: "Email sent successfully and token saved",
+    };
   } catch (error) {
     console.error("Error sending email:", error);
     throw new Error("Error sending email: " + error.message);
