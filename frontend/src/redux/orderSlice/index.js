@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
+//import  securityUtils  "../../utils/securityUtils";
 
 const initialState = {
   orderList: [],
@@ -8,8 +9,6 @@ const initialState = {
   isLoading: false,
   placedOrderId: null,
 };
-
-
 
 const securityUtils = {
   // Sanitize input to prevent XSS
@@ -32,12 +31,13 @@ const securityUtils = {
     if (typeof id !== "string") return false;
     return /^[a-zA-Z0-9\-_]{1,50}$/.test(id);
   },
+
   // Validate blob content type
   validateContentType: (blob, expectedType) => {
     return blob.type === expectedType;
   },
 
-  //* Safe file download function
+  // Safe file download function
   safeDownload: (blob, filename, expectedContentType) => {
     try {
       // Validate blob content type
@@ -66,7 +66,7 @@ const securityUtils = {
       document.body.appendChild(link);
       link.click();
 
-      
+      // Cleanup immediately
       setTimeout(() => {
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
@@ -77,6 +77,8 @@ const securityUtils = {
     }
   },
 };
+
+
 export const cancelPayment = createAsyncThunk(
   "/order/cancelPayment",
   async ({ orderId }, { getState }) => {
