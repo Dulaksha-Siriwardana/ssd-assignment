@@ -66,7 +66,7 @@ const securityUtils = {
       document.body.appendChild(link);
       link.click();
 
-      // Cleanup immediately
+      
       setTimeout(() => {
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
@@ -121,20 +121,50 @@ export const capturePayment = createAsyncThunk(
 
 export const createNewOrder = createAsyncThunk(
   "/order/createNewOrder",
-  async (orderData, { getState }) => {
-    const auth = getState().auth;
-    const token = auth.token;
-    const response = await axios.post(
-      `${import.meta.env.VITE_API_URL}orders/`,
-      orderData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+  async (orderData, { getState, rejectWithValue }) => {
+    try {
+      const auth = getState().auth;
+      const token = auth.token;
 
-    return response.data;
+      if (!token) {
+        return rejectWithValue("Authentication required");
+      }
+
+      // FIX: Sanitize order data before sending
+      const sanitizedOrderData = {
+        ...orderData,
+        // Sanitize string fields
+        ...(orderData.addressInfo && {
+          addressInfo: {
+            ...orderData.addressInfo,
+            address: securityUtils.sanitizeInput(
+              orderData.addressInfo.address || ""
+            ),
+            city: securityUtils.sanitizeInput(orderData.addressInfo.city || ""),
+            notes: securityUtils.sanitizeInput(
+              orderData.addressInfo.notes || ""
+            ),
+          },
+        }),
+      };
+
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}orders/`,
+        sanitizedOrderData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          timeout: 15000,
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error("Order creation failed:", error);
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
   }
 );
 
