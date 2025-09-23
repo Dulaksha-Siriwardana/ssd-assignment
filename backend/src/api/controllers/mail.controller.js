@@ -51,6 +51,16 @@ export const sendEmail = async (email, itemId, qnt, date) => {
       throw new Error('Supplier not found');
     }
     
+    // Rate limiting check - prevent spam
+    const recentTokens = await SupplierToken.countDocuments({
+      supplier: supplier._id,
+      createdAt: { $gte: new Date(Date.now() - 3600000) } // Last hour
+    });
+    
+    if (recentTokens >= 5) { // Max 5 tokens per hour per supplier
+      throw new Error('Rate limit exceeded. Try again later.');
+    }
+    
     
   } catch (error) {
     console.error("Error sending email:", error);
