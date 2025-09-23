@@ -2,7 +2,7 @@ import SupplierToken from "../models/supplierToken.model";
 
 export const addSupplierToken = async tokenData => {
   try {
-    const { token, itemId, quantity, date, supplier } = tokenData;
+    const { token, itemId, quantity, date, supplier, expiresAt } = tokenData;
 
     const newSupplierToken = new SupplierToken({
       token,
