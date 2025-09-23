@@ -4,12 +4,17 @@ export const addSupplierToken = async tokenData => {
   try {
     const { token, itemId, quantity, date, supplier, expiresAt } = tokenData;
 
+    // Hash the token before storing 
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
     const newSupplierToken = new SupplierToken({
-      token,
-      itemId,
+      tokenHash, // Store hash instead of plain token
       quantity,
       date,
       supplier,
+      expiresAt,
+      status: "PENDING",
+      createdAt: new Date(),
     });
 
     await newSupplierToken.save();
