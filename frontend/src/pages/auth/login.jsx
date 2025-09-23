@@ -5,6 +5,8 @@ import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { loginUser, clearNotifications } from "@/redux/authSlice";
 import { toast } from "react-toastify";
+import GoogleLoginButton from "@/components/GoogleLoginButton";
+
 
 const initialState = {
   username: "",
@@ -77,6 +79,11 @@ const AuthLogin = () => {
         setFormData={setFormData}
         onSubmit={onSubmit}
       />
+      <div className="flex flex-col items-center justify-center pt-6">
+       <h2 className="text-l font-semibold mb-3">Or continue with</h2>
+        <GoogleLoginButton />
+      </div>
+
     </div>
   );
 };
