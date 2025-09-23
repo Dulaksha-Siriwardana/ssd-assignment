@@ -7,6 +7,30 @@ import Supplier from "../models/supplier.model";
 
 dotenv.config();
 
+// FIX 1: SECURE TOKEN GENERATION
+const generateSecureToken = async (supplierEmail, itemId) => {
+  // Use JWT with strong payload and expiration
+  const payload = {
+    supplierEmail,
+    itemId,
+    timestamp: Date.now(),
+    nonce: crypto.randomBytes(16).toString('hex') // Add randomness
+  };
+  
+  // Create JWT with 24-hour expiration
+  const token = jwt.sign(
+    payload, 
+    process.env.JWT_SECRET ,
+    { 
+      expiresIn: '24h',
+      issuer: 'fashion-retail-store',
+      audience: 'supplier-confirmation'
+    }
+  );
+  
+  return token;
+};
+
 export const sendEmail = async (email, itemId, qnt, date) => {
   const transporter1 = nodemailer.createTransport({
     host: "smtp.gmail.com",
