@@ -2,13 +2,22 @@ import User from "../models/user.model.js";
 import { validationResult } from "express-validator";
 import logger from "../../utils/logger.js";
 import bcrypt from "bcrypt";
+import validator from 'validator';
 import genAuthToken from "../../utils/genAuthToken.js";
 import { emailOrUsername } from "../../utils/helpers.js";
 import Referral from "../models/referral";
 import Loyalty from "../models/loyalty";
 import { determineTier } from "../controllers/loyaltyController.js";
 
+const sanitizeInput = (input) => {
+  if (typeof input !== 'string') {
+    throw new Error('Invalid input type');
+  }
+  return validator.escape(input.trim());
+};
+
 const authController = {
+  
   async register(req, res) {
     try {
       const errors = validationResult(req);
@@ -32,15 +41,35 @@ const authController = {
         referralCode,
       } = req.body;
 
-      // Check if username or email already exists
-      const userNameExists = await User.findOne({ username });
+      const sanitizedUsername = sanitizeInput(username);
+      const sanitizedEmail = sanitizeInput(email);
+
+      if (!validator.isEmail(sanitizedEmail)) {
+        return res.status(400).json({ 
+          message: "Invalid email format", 
+          success: false 
+        });
+      }
+
+      if (!validator.isLength(sanitizedUsername, { min: 3, max: 20 })) {
+        return res.status(400).json({ 
+          message: "Username must be between 3-20 characters", 
+          success: false 
+        });
+      }
+
+      const userNameExists = await User.findOne({ 
+        username: { $eq: sanitizedUsername } 
+      });
       if (userNameExists) {
         return res
           .status(400)
           .json({ message: "Username already exists", success: false });
       }
 
-      const userExists = await User.findOne({ email });
+      const userExists = await User.findOne({ 
+        email: { $eq: sanitizedEmail } 
+      });
       if (userExists) {
         return res
           .status(400)
@@ -52,18 +81,18 @@ const authController = {
       const hashedPassword = await bcrypt.hash(password, salt);
 
       const user = new User({
-        username,
-        firstname,
-        lastname,
-        email,
+        username: sanitizedUsername,
+        firstname: sanitizeInput(firstname),
+        lastname: sanitizeInput(lastname),
+        email: sanitizedEmail,
         password: hashedPassword,
-        role,
+        role: role || "user",
         avatar,
-        contact,
-        address,
-        city,
-        postalCode,
-        country,
+        contact: contact ? sanitizeInput(contact) : undefined,
+        address: address ? sanitizeInput(address) : undefined,
+        city: city ? sanitizeInput(city) : undefined,
+        postalCode: postalCode ? sanitizeInput(postalCode) : undefined,
+        country: country ? sanitizeInput(country) : undefined,
         created_date: new Date(),
         last_login: new Date(),
         referralCode: referralCode || null,
@@ -95,47 +124,55 @@ const authController = {
   },
 
   async login(req, res) {
-    const { username, password } = req.body;
+  const { username, password } = req.body;
 
-    const type = emailOrUsername(username);
-
-    try {
-      let user;
-      if (type === "email") {
-        user = await User.findOne({ email: username });
-      } else {
-        user = await User.findOne({ username: username });
-      }
-
-      if (!user) {
-        return res
-          .status(400)
-          .json({ sucess: false, message: "User not found" });
-      }
-
-      const validPassword = await bcrypt.compare(password, user.password);
-
-      if (!validPassword) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Invalid password" });
-      }
-
-      user.password = undefined;
-
-      const token = genAuthToken(user);
-      res.status(200).json({
-        success: true,
-        message: "Succesfully logged in",
-        user: user,
-        token: token,
+  try {
+    const sanitizedUsername = sanitizeInput(username);
+    const sanitizedPassword = sanitizeInput(password);
+    
+    if (!sanitizedUsername || !sanitizedPassword) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid credentials" 
       });
-    } catch (error) {
-      logger.error(error.message);
-      res.status(500).json({ message: "Internal server error" });
     }
-  },
 
+    const type = emailOrUsername(sanitizedUsername);
+    
+    let user;
+    if (type === "email") {
+      user = await User.findOne({ 
+        email: { $eq: sanitizedUsername } 
+      });
+    } else {
+      user = await User.findOne({ 
+        username: { $eq: sanitizedUsername } 
+      });
+    }
+
+    const validPassword = user ? await bcrypt.compare(password, user.password) : false;
+
+    if (!user || !validPassword) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid credentials" 
+      });
+    }
+
+    user.password = undefined;
+    const token = genAuthToken(user);
+    
+    res.status(200).json({
+      success: true,
+      message: "Successfully logged in",
+      user: user,
+      token: token,
+    });
+  } catch (error) {
+    logger.error(error.message);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+},
   async checkAuth(req, res) {
     try {
       const user = await User.findById(req.user._id).select("-password");
@@ -157,7 +194,6 @@ const authController = {
 
   async logout(req, res) {
     try {
-      // Clear the authentication token or session cookie
       res.clearCookie("token");
 
       res.status(200).json({ message: "Logged out successfully" });

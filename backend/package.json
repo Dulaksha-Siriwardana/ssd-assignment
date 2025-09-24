@@ -21,6 +21,7 @@
     "easyinvoice": "^3.0.11",
     "exceljs": "^4.4.0",
     "express": "^4.21.0",
+    "express-mongo-sanitize": "^2.2.0",
     "express-validator": "^7.2.0",
     "jsonwebtoken": "^9.0.2",
     "mailgen": "^2.0.28",
@@ -30,7 +31,8 @@
     "paypal-rest-sdk": "^1.8.1",
     "pino": "^9.3.2",
     "pino-caller": "^3.4.0",
-    "pino-pretty": "^11.2.2"
+    "pino-pretty": "^11.2.2",
+    "validator": "^13.15.15"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
