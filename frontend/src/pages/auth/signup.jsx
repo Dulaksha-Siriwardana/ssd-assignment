@@ -4,7 +4,8 @@ import CommonForm from "@/components/common/form";
 import { resigterFormControls } from "@/config";
 import { useDispatch } from "react-redux";
 import { registerUser } from "@/redux/authSlice";
-import { useToast, toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
+import { toast as reactToastify } from "react-toastify";
 
 const initialState = {
   username: "",
@@ -32,7 +33,33 @@ const AuthSignup = () => {
           duration: 3000,
         });
         navigate("/shop/home");
+      } else if (data.type === "auth/register/fulfilled" && !data.payload.success) {
+        // Handle case where request is successful but registration failed
+        const errorMessage = data.payload.message || "Registration failed";
+        
+        // Handle validation errors array if present
+        if (data.payload?.errors && Array.isArray(data.payload.errors)) {
+          data.payload.errors.forEach((error) => {
+            reactToastify.error(error.msg || error.message);
+          });
+        } else {
+          reactToastify.error(errorMessage);
+        }
+      } else if (data.type === "auth/register/rejected") {
+        // Handle specific registration errors
+        const errorMessage = data.payload?.message || "Registration failed";
+        
+        // Handle validation errors array if present
+        if (data.payload?.errors && Array.isArray(data.payload.errors)) {
+          data.payload.errors.forEach((error) => {
+            reactToastify.error(error.msg || error.message);
+          });
+        } else {
+          reactToastify.error(errorMessage);
+        }
       }
+    }).catch((error) => {
+      reactToastify.error("An unexpected error occurred");
     });
   }
 

@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const LoyaltySchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -16,4 +16,6 @@ const LoyaltySchema = new mongoose.Schema({
   referredcount: { type: Number, default: 0 },
 });
 
-module.exports = mongoose.model("Loyalty", LoyaltySchema);
+const Loyalty = mongoose.model("Loyalty", LoyaltySchema);
+
+export default Loyalty;
