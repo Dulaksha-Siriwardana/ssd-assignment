@@ -23,37 +23,36 @@ const AuthLogin = () => {
     console.log(formData);
 
     dispatch(loginUser(formData))
-      .then((result) => {
-        if (result.type === "auth/login/fulfilled") {
-          const userData = result.payload.user;
-          if (
-            userData &&
-            userData.notifications &&
-            userData.notifications.length > 0
-          ) {
-            userData.notifications.forEach((notification) => {
-              toast.info(notification); // Show toast notification
-            });
+    .then((result) => {
+      if (result.type === "auth/login/fulfilled") {
+        const userData = result.payload.user;
+        if (userData?.notifications?.length > 0) {
+          userData.notifications.forEach((notification) => {
+            toast.info(notification); // Show toast notification
+          });
 
-            // Clear notifications from backend
-            if (userData.email) {
-              dispatch(clearNotifications(userData.email))
-                .then((clearResult) => {
-                  clearResult.type === "auth/clearNotifications/fulfilled";
-                })
-                .catch(() => {
+          // Clear notifications from backend
+          if (userData?.email) {
+            dispatch(clearNotifications(userData.email))
+              .then((clearResult) => {
+                if (clearResult.type !== "auth/clearNotifications/fulfilled") {
                   toast.error("Failed to clear notifications");
-                });
-            }
+                }
+              })
+              .catch(() => {
+                toast.error("Failed to clear notifications");
+              });
           }
-        } else {
-          // Handle login errors if any
-          toast.error("Login failed");
         }
-      })
-      .catch(() => {
+      } else {
+        // Handle login errors if any
         toast.error("Login failed");
-      });
+      }
+    })
+    .catch(() => {
+      toast.error("Login failed");
+    });
+
   }
 
   return (
