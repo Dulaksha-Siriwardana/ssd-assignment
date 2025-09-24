@@ -1,10 +1,19 @@
 import Address from "../models/address.model";
+import mongoose from "mongoose";
 
 export const addAddress = async (req, res) => {
   try {
     const { userId, address, city, pincode, phone, notes } = req.body;
 
-    if (!userId || !address || !city || !pincode || !phone) {
+     // Validate userId as ObjectId
+    if (
+      !userId ||
+      !mongoose.Types.ObjectId.isValid(userId) ||
+      !address ||
+      !city ||
+      !pincode ||
+      !phone
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid data provided!",
@@ -38,14 +47,14 @@ export const addAddress = async (req, res) => {
 export const fetchAllAddress = async (req, res) => {
   try {
     const { userId } = req.params;
-    if (!userId) {
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({
         success: false,
-        message: "User id is required!",
+        message: "User id is required and must be valid!",
       });
     }
 
-    const addressList = await Address.find({ userId });
+    const addressList = await Address.find({ userId: String(userId) });
 
     res.status(200).json({
       success: true,
@@ -65,17 +74,22 @@ export const editAddress = async (req, res) => {
     const { userId, addressId } = req.params;
     const formData = req.body;
 
-    if (!userId || !addressId) {
+     if (
+      !userId ||
+      !mongoose.Types.ObjectId.isValid(userId) ||
+      !addressId ||
+      !mongoose.Types.ObjectId.isValid(addressId)
+    ) {
       return res.status(400).json({
         success: false,
-        message: "User and address id is required!",
+        message: "User and address id are required and must be valid!",
       });
     }
 
     const address = await Address.findOneAndUpdate(
       {
-        _id: addressId,
-        userId,
+        _id: String(addressId),
+        userId: String(userId),
       },
       formData,
       { new: true }
@@ -104,14 +118,23 @@ export const editAddress = async (req, res) => {
 export const deleteAddress = async (req, res) => {
   try {
     const { userId, addressId } = req.params;
-    if (!userId || !addressId) {
+
+    if (
+      !userId ||
+      !mongoose.Types.ObjectId.isValid(userId) ||
+      !addressId ||
+      !mongoose.Types.ObjectId.isValid(addressId)
+    ) {
       return res.status(400).json({
         success: false,
-        message: "User and address id is required!",
+        message: "User and address id are required and must be valid!",
       });
     }
 
-    const address = await Address.findOneAndDelete({ _id: addressId, userId });
+    const address = await Address.findOneAndDelete({
+      _id: String(addressId),
+      userId: String(userId),
+    });
 
     if (!address) {
       return res.status(404).json({
