@@ -7,7 +7,11 @@ const router = express.Router();
 // Start Google OAuth
 router.get(
   "/login",
-  passport.authenticate("google", { scope: ["profile", "email"] })
+  passport.authenticate("google", { 
+    scope: ["profile", "email"],
+    prompt: "consent", // Force consent screen
+    access_type: "offline" // Request refresh token
+  })
 );
 
 // Callback
@@ -21,6 +25,6 @@ router.get(
 router.get("/user", getUser);
 
 // Logout
-router.get("/logout", logoutUser);
+router.post("/logout", logoutUser);
 
 export default router;

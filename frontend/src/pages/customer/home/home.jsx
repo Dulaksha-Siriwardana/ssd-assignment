@@ -5,10 +5,59 @@ import { Button } from "@/components/ui/button";
 import CapImage from "../../../assets/cap.jpg";
 import MenFashion from "../../../assets/men.jpg";
 import WomenFashion from "../../../assets/women.jpg";
+import { useDispatch } from "react-redux";
+import { logOutUser } from "@/redux/authSlice";
+import { toast } from "react-toastify";
 
 const ShoppingHome = () => {
+  const dispatch = useDispatch();
+
+  const handleLogout = async () => {
+    try {
+      // Call the backend logout endpoint
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/google/logout`, {
+        method: 'POST',
+        credentials: 'include', // Include cookies for session-based auth
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Clear user data from Redux store
+        dispatch(logOutUser());
+        toast.success("Logged out successfully");
+        
+        // Clear any local storage or session storage if needed
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Redirect to login page - this will force Google consent page on next login
+        window.location.href = "/auth/login";
+      } else {
+        console.error("Logout failed:", data);
+        toast.error(data.error || "Logout failed");
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("Logout failed");
+    }
+  };
+
   return (
     <div className="bg-gray-100 min-h-screen">
+      {/* Logout Button - Top Right */}
+      <div className="absolute top-4 right-4 z-20">
+        <Button 
+          onClick={handleLogout}
+          variant="outline"
+          className="bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
+        >
+          Logout
+        </Button>
+      </div>
       {/* Hero Section */}
       <section className="relative bg-cover bg-center h-[60vh] bg-hero-pattern flex items-center justify-center text-center text-white">
         <div className="absolute inset-0 bg-black opacity-50"></div>

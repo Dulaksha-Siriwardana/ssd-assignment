@@ -13,6 +13,7 @@ import ShoppingHome from "./pages/customer/home/home";
 import Profile from "./pages/customer/profile/profile";
 import UnAuthPage from "./pages/unauth-page";
 import CheckAuth from "./components/common/check-auth";
+import GoogleAuthChecker from "./components/GoogleAuthChecker";
 import { useSelector } from "react-redux";
 import ShoppingCheckout from "./pages/customer/checkout/checkout";
 import SupplierConfirmation from "./pages/supplier-access/SupplierConfimation";
@@ -43,7 +44,8 @@ function App() {
   return (
     <>
       <ToastContainer />
-      <Routes>
+      <GoogleAuthChecker>
+        <Routes>
         <Route path="/" element={<CheckAuth />} />
 
         <Route
@@ -119,7 +121,8 @@ function App() {
         
       <Route path="dashboard" element={<ShoppingHome />} />
 
-      </Routes>
+        </Routes>
+      </GoogleAuthChecker>
     </>
   );
 }
