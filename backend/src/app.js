@@ -18,11 +18,18 @@ import cartRouter from "./api/routes/cart.route";
 import addressRouter from "./api/routes/address.route";
 import loyaltyRoutes from "./api/routes/loyaltyRoutes";
 import referralRoutes from "./api/routes/referralRoutes";
+import helmet from "helmet";
 import googleAuthRouter from "./api/routes/googleAuth.route";
 
 const PORT = process.env.PORT || 5000;
 
 const app = express();
+
+//Disable x-powered-by header to prevent information leakage
+app.disable("x-powered-by");
+
+//Use this to secure Express apps by setting various HTTP headers
+app.use(helmet());
 
 app.use(
   cors({
