@@ -2,6 +2,7 @@ import logger from "../../utils/logger.js";
 import User from "../models/user.model.js";
 import { validationResult } from "express-validator";
 import bcrypt from "bcrypt";
+import mongoose from "mongoose";
 
 const userController = {
   async getAllUsers(req, res) {
@@ -14,9 +15,16 @@ const userController = {
     }
   },
 
-  async getUserById(req, res) {
+async getUserById(req, res) {
     try {
-      const user = await User.findById(req.params.id).select("-password");
+      const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      const user = await User.findById(id).select("-password");
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
       res.json(user);
     } catch (error) {
       logger.error(error.message);
@@ -31,12 +39,20 @@ const userController = {
         return res.status(400).json({ message: "Invalid" });
       }
 
-      const user = await User.findById(req.params.id);
+      const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      const user = await User.findById(id);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
 
-      const previousPassword = req.param.prevPassword;
+      const previousPassword = req.body.prevPassword;
+      if (!previousPassword) {
+        return res.status(400).json({ message: "Previous password required" });
+      }
 
       const isMatch = await bcrypt.compare(previousPassword, user.password);
 
@@ -44,21 +60,24 @@ const userController = {
         return res.status(400).json({ message: "Invalid password" });
       }
 
-      const salt = await bcrypt.genSalt();
-      const hashedPassword = await bcrypt.hash(req.body.newPassword, salt);
+      // Only update password if newPassword is provided
+      if (req.body.newPassword) {
+        const salt = await bcrypt.genSalt();
+        user.password = await bcrypt.hash(req.body.newPassword, salt);
+      }
 
-      user.name = req.body.name;
-      user.firstname = req.body.firstname;
-      user.lastname = req.body.lastname;
-      user.email = req.body.email;
-      user.password = hashedPassword;
-      user.role = req.body.role;
-      user.avatar = req.body.avatar;
-      user.contact = req.body.contact;
-      user.address = req.body.address;
-      user.city = req.body.city;
-      user.postalCode = req.body.postalCode;
-      user.country = req.body.country;
+
+      user.name = req.body.name || user.name;
+      user.firstname = req.body.firstname || user.firstname;
+      user.lastname = req.body.lastname || user.lastname;
+      user.email = req.body.email || user.email;
+      user.role = req.body.role || user.role;
+      user.avatar = req.body.avatar || user.avatar;
+      user.contact = req.body.contact || user.contact;
+      user.address = req.body.address || user.address;
+      user.city = req.body.city || user.city;
+      user.postalCode = req.body.postalCode || user.postalCode;
+      user.country = req.body.country || user.country;
 
       await user.save();
       res.json({ message: "User updated successfully" });
@@ -70,7 +89,11 @@ const userController = {
 
   async deleteUser(req, res) {
     try {
-      const user = await User.findById(req.params.id);
+       const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      const user = await User.findById(id);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -87,8 +110,13 @@ const userController = {
     try {
       const { email } = req.body;
 
+      // Basic email validation
+      if (!email || typeof email !== "string" || !email.includes("@")) {
+        return res.status(400).json({ message: "Invalid email" });
+      }
+
       // Find user by email
-      const user = await User.findOne({ email });
+      const user = await User.findOne({ email: String(email) });
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }

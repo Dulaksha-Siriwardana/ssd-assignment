@@ -1,5 +1,6 @@
 const Loyalty = require("../models/loyalty");
 const PromoCode = require("../models/loyaltyPromos");
+const mongoose = require("mongoose");
 
 function determineTier(loyaltyPoints, currentTier) {
   if (currentTier === "Diamond") {
@@ -43,9 +44,14 @@ exports.updateCustomer = async (req, res) => {
   const { email } = req.params;
   const updateFields = req.body;
 
+  // Basic email validation
+  if (!email || typeof email !== "string" || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+    return res.status(400).json({ message: "Invalid email" });
+  }
+
   try {
     // Find the customer by email
-    const existingCustomer = await Loyalty.findOne({ email });
+     const existingCustomer = await Loyalty.findOne({ email: String(email) });
 
     if (!existingCustomer) {
       return res.status(404).json({ message: "Customer not found" });
@@ -70,9 +76,12 @@ exports.updateCustomer = async (req, res) => {
 
 // Delete customer by email
 exports.deleteCustomerByEmail = async (req, res) => {
+  const { email } = req.params;
+  if (!email || typeof email !== "string" || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+    return res.status(400).json({ message: "Invalid email" });
+  }
   try {
-    const { email } = req.params;
-    const result = await Loyalty.findOneAndDelete({ email });
+    const result = await Loyalty.findOneAndDelete({ email: String(email) });
 
     if (!result) {
       return res.status(404).json({ message: "Customer not found" });
@@ -86,6 +95,10 @@ exports.deleteCustomerByEmail = async (req, res) => {
 
 // Update loyalty points and tier
 exports.updateLoyaltyPoints = async (req, res) => {
+  const { email } = req.params;
+  if (!email || typeof email !== "string" || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+    return res.status(400).json({ message: "Invalid email" });
+  }
   try {
     console.log("Request received:");
     console.log("Email:", req.params.email);
@@ -123,6 +136,10 @@ exports.updateLoyaltyPoints = async (req, res) => {
 
 // Update newMember status
 exports.updateNewMemberStatus = async (req, res) => {
+  const { id } = req.params;
+  if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: "Invalid ID" });
+  }
   try {
     const { newMember } = req.body;
     const customer = await Loyalty.findByIdAndUpdate(
@@ -138,9 +155,13 @@ exports.updateNewMemberStatus = async (req, res) => {
 
 // Check if customer email exists
 exports.checkCustomerEmail = async (req, res) => {
+  const { email } = req.body;
+  if (!email || typeof email !== "string" || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+    return res.status(400).json({ message: "Invalid email" });
+  }
   try {
     const { email } = req.body;
-    const customer = await Loyalty.findOne({ email });
+    const customer = await Loyalty.findOne({ email: String(email) });
     if (customer) {
       res.json({ exists: true });
     } else {
@@ -153,6 +174,10 @@ exports.checkCustomerEmail = async (req, res) => {
 
 // Get customer details by email
 exports.getCustomerByEmail = async (req, res) => {
+  const { email } = req.params;
+  if (!email || typeof email !== "string" || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+    return res.status(400).json({ message: "Invalid email" });
+  }
   try {
     const customer = await Loyalty.findOne({ email: req.params.email });
     if (!customer) {
@@ -177,6 +202,12 @@ exports.addPromoCode = async (req, res) => {
 
 // Validate and apply promo code
 exports.validatePromoCode = async (req, res) => {
+
+  const { promoCode } = req.body;
+  if (!promoCode || typeof promoCode !== "string") {
+    return res.status(400).json({ success: false, message: "Invalid promo code" });
+  }
+
   try {
     const { promoCode } = req.body;
     const promo = await PromoCode.findOne({ code: promoCode });
@@ -209,6 +240,10 @@ exports.validatePromoCode = async (req, res) => {
 
 // Get promo codes by tier
 exports.getPromoCodesByTier = async (req, res) => {
+  const { tier } = req.params;
+  if (!tier || typeof tier !== "string") {
+    return res.status(400).json({ error: "Invalid tier" });
+  }
   try {
     const promoCodes = await PromoCode.find({ tier: req.params.tier });
     res.json(promoCodes);
@@ -229,7 +264,10 @@ exports.getAllPromoCodes = async (req, res) => {
 
 // Delete a promo code by ID
 exports.deletePromoCode = async (req, res) => {
-  const { id } = req.params;
+   const { id } = req.params;
+  if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ error: "Invalid promo code ID" });
+  }
 
   try {
     // Find and delete the promo code by ID
@@ -251,6 +289,9 @@ exports.deletePromoCode = async (req, res) => {
 // Update a promo code by ID
 exports.updatePromoCode = async (req, res) => {
   const { id } = req.params;
+  if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ error: "Invalid promo code ID" });
+  }
   const updateData = req.body;
 
   try {
@@ -274,6 +315,10 @@ exports.updatePromoCode = async (req, res) => {
 };
 
 exports.getPromoCodeById = async (req, res) => {
+  const promoCodeId = req.params.id;
+  if (!promoCodeId || !mongoose.Types.ObjectId.isValid(promoCodeId)) {
+    return res.status(400).json({ message: "Invalid promo code ID" });
+  }
   try {
     const promoCodeId = req.params.id;
     console.log("Promo Code ID:", promoCodeId); // Check the received ID
@@ -299,6 +344,10 @@ exports.getPromoCodeById = async (req, res) => {
 
 // Update a promo code by ID
 exports.updatePromoCodeById = async (req, res) => {
+  const promoCodeId = req.params.id;
+  if (!promoCodeId || !mongoose.Types.ObjectId.isValid(promoCodeId)) {
+    return res.status(400).json({ message: "Invalid promo code ID" });
+  }
   try {
     const promoCodeId = req.params.id;
     const updateData = req.body; // Data to update
@@ -321,6 +370,9 @@ exports.updatePromoCodeById = async (req, res) => {
 
 exports.applyPromoCode = async (req, res) => {
   const { code } = req.body;
+  if (!code || typeof code !== "string") {
+    return res.status(400).json({ error: "Invalid promo code" });
+  }
 
   try {
     // Find the promo code in the database
@@ -349,6 +401,9 @@ exports.applyPromoCode = async (req, res) => {
 
 exports.updateCustomerTier = async (req, res) => {
   const { email } = req.params;
+  if (!email || typeof email !== "string" || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+    return res.status(400).json({ message: "Invalid email" });
+  }
   const { tier } = req.body;
 
   try {
