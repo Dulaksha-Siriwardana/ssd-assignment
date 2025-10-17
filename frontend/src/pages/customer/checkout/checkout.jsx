@@ -68,6 +68,18 @@ function ShoppingCheckout() {
       return;
     }
 
+  // Sanitize promoCode before using it
+  const safePromoCode = promoCode.replace(/[^a-zA-Z0-9-_]/g, "");
+
+  if (safePromoCode !== promoCode) {
+    toast({
+      title: "Invalid promo code format",
+      description: "Only letters, numbers, dashes and underscores allowed.",
+      variant: "destructive",
+    });
+    return;
+  }
+
     const hasSaleItems = cartItems.items.some(
       (item) => item.salePrice && item.salePrice > 0
     );
@@ -81,7 +93,7 @@ function ShoppingCheckout() {
     }
 
     try {
-      const resultAction = await dispatch(applyPromoCode(promoCode));
+      const resultAction = await dispatch(applyPromoCode(safePromoCode));
       if (applyPromoCode.fulfilled.match(resultAction)) {
         const { discountPercentage, discountAmount } = resultAction.payload;
 
