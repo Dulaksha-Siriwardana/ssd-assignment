@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Cart from "../models/cart.model";
 import Product from "../models/product.model";
 import logger from "../../utils/logger";
@@ -7,7 +8,14 @@ const cartController = {
     try {
       const { userId, productId, quantity } = req.body;
 
-      if (!userId || !productId || quantity <= 0) {
+      if (
+        !userId ||
+        !productId ||
+        !Number.isInteger(quantity) ||
+        quantity <= 0 ||
+        !mongoose.Types.ObjectId.isValid(userId) ||
+        !mongoose.Types.ObjectId.isValid(productId)
+      ) {
         return res.status(400).json({
           success: false,
           message: "Invalid data provided!",
@@ -23,10 +31,10 @@ const cartController = {
         });
       }
 
-      let cart = await Cart.findOne({ userId: userId });
+      let cart = await Cart.findOne({ userId: String(userId) });
 
       if (!cart) {
-        cart = new Cart({ userId, items: [] });
+        cart = new Cart({ userId: String(userId), items: [] });
         logger.info("cart created");
       }
 
@@ -35,7 +43,7 @@ const cartController = {
       );
 
       if (findCurrentProductIndex === -1) {
-        cart.items.push({ productId, quantity });
+        cart.items.push({ productId: String(productId), quantity });
       } else {
         cart.items[findCurrentProductIndex].quantity += quantity;
       }
@@ -58,14 +66,17 @@ const cartController = {
     try {
       const { userId } = req.params;
 
-      if (!userId) {
+      if (
+        !userId ||
+        !mongoose.Types.ObjectId.isValid(userId)
+      ) {
         return res.status(400).json({
           success: false,
-          message: "User id is manadatory!",
+          message: "User id is mandatory and must be valid!",
         });
       }
 
-      const cart = await Cart.findOne({ userId: userId }).populate({
+      const cart = await Cart.findOne({ userId: String(userId) }).populate({
         path: "items.productId",
         select: "image title price salePrice",
       });
@@ -115,14 +126,21 @@ const cartController = {
     try {
       const { userId, productId, quantity } = req.body;
 
-      if (!userId || !productId || quantity <= 0) {
+      if (
+        !userId ||
+        !productId ||
+        !Number.isInteger(quantity) ||
+        quantity <= 0 ||
+        !mongoose.Types.ObjectId.isValid(userId) ||
+        !mongoose.Types.ObjectId.isValid(productId)
+      ) {
         return res.status(400).json({
           success: false,
           message: "Invalid data provided!",
         });
       }
 
-      const cart = await Cart.findOne({ userId });
+      const cart = await Cart.findOne({ userId: String(userId) });
       if (!cart) {
         return res.status(404).json({
           success: false,
@@ -177,14 +195,19 @@ const cartController = {
   async deleteCartItem(req, res) {
     try {
       const { userId, productId } = req.params;
-      if (!userId || !productId) {
+      if (
+        !userId ||
+        !productId ||
+        !mongoose.Types.ObjectId.isValid(userId) ||
+        !mongoose.Types.ObjectId.isValid(productId)
+      ) {
         return res.status(400).json({
           success: false,
           message: "Invalid data provided!",
         });
       }
 
-      const cart = await Cart.findOne({ userId }).populate({
+      const cart = await Cart.findOne({ userId: String(userId) }).populate({
         path: "items.productId",
         select: "image title price salePrice",
       });

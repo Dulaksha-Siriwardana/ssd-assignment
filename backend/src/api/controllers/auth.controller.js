@@ -33,14 +33,14 @@ const authController = {
       } = req.body;
 
       // Check if username or email already exists
-      const userNameExists = await User.findOne({ username });
+      const userNameExists = await User.findOne({ username: String(username) });
       if (userNameExists) {
         return res
           .status(400)
           .json({ message: "Username already exists", success: false });
       }
 
-      const userExists = await User.findOne({ email });
+      const userExists = await User.findOne({ email: String(email) });
       if (userExists) {
         return res
           .status(400)
@@ -102,9 +102,9 @@ const authController = {
     try {
       let user;
       if (type === "email") {
-        user = await User.findOne({ email: username });
+        user = await User.findOne({ email: String(username) }).select("-password");
       } else {
-        user = await User.findOne({ username: username });
+        user = await User.findOne({ username: String(username) }).select("-password");
       }
 
       if (!user) {
@@ -113,7 +113,15 @@ const authController = {
           .json({ sucess: false, message: "User not found" });
       }
 
-      const validPassword = await bcrypt.compare(password, user.password);
+      // Fetch the user again (with password) for password comparison
+      let userWithPassword;
+      if (type === "email") {
+        userWithPassword = await User.findOne({ email: String(username) });
+      } else {
+        userWithPassword = await User.findOne({ username: String(username) });
+      }
+
+      const validPassword = await bcrypt.compare(password, userWithPassword.password);
 
       if (!validPassword) {
         return res
@@ -121,12 +129,10 @@ const authController = {
           .json({ success: false, message: "Invalid password" });
       }
 
-      user.password = undefined;
-
       const token = genAuthToken(user);
       res.status(200).json({
         success: true,
-        message: "Succesfully logged in",
+        message: "Successfully logged in",
         user: user,
         token: token,
       });
@@ -151,7 +157,7 @@ const authController = {
       res.status(200).json({ success: true, user: user, token: token });
     } catch (error) {
       logger.error(error.message);
-      res.status(500).json({ sucess: false, message: "Internal server error" });
+      res.status(500).json({ success: false, message: "Internal server error" });
     }
   },
 
@@ -172,15 +178,15 @@ const authController = {
 const processReferral = async (referralToken, referredEmail) => {
   try {
     // Find the referral using the token
-    const referral = await Referral.findOne({ token: referralToken });
+    const referral = await Referral.findOne({ token: String(referralToken) });
     if (referral) {
       const referrerEmail = referral.referrerEmail;
 
       // Find the referrer
-      const referrer = await User.findOne({ email: referrerEmail });
+      const referrer = await User.findOne({ email: String(referrerEmail) });
       if (referrer) {
         // Find the loyalty record for the referrer
-        const loyalty = await Loyalty.findOne({ email: referrerEmail });
+        const loyalty = await Loyalty.findOne({ email: String(referrerEmail) });
 
         if (loyalty) {
           // Add 40 points to the referrer's loyalty points

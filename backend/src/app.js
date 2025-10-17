@@ -1,8 +1,11 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import session from "express-session";
+import passport from "passport";
 import logger from "./utils/logger";
 import connect from "./utils/db.connection";
+
 import userRouter from "./api/routes/user.route";
 import authRouter from "./api/routes/auth.route";
 import orderRouter from "./api/routes/order.route";
@@ -16,6 +19,7 @@ import addressRouter from "./api/routes/address.route";
 import loyaltyRoutes from "./api/routes/loyaltyRoutes";
 import referralRoutes from "./api/routes/referralRoutes";
 import helmet from "helmet";
+import googleAuthRouter from "./api/routes/googleAuth.route";
 
 const PORT = process.env.PORT || 5000;
 
@@ -37,6 +41,19 @@ app.use(
 );
 app.use(express.json({ limit: "50mb" }));
 
+// Session middleware for Passport
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: true,
+  })
+);
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
+
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
@@ -54,6 +71,8 @@ app.use("/api/stock", stockRouter);
 app.use("/api/sendmail", mailRouter);
 app.use("/api/supplier", supplierRouter);
 app.use("/api/supplierToken", supTokenRouter);
+
+app.use("/api/google", googleAuthRouter); 
 
 app.listen(PORT, () => {
   logger.info(`Server is running on port: ${PORT}`);

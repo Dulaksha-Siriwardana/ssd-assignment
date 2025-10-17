@@ -116,6 +116,9 @@ function App() {
           path="/supplier-order/:tokenId"
           element={<SupplierConfirmation />}
         />
+        
+      <Route path="dashboard" element={<ShoppingHome />} />
+
       </Routes>
     </>
   );
