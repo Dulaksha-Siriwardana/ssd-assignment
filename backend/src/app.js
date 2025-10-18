@@ -5,7 +5,7 @@ import session from "express-session";
 import passport from "passport";
 import logger from "./utils/logger";
 import connect from "./utils/db.connection";
-
+import mongoSanitize from 'express-mongo-sanitize';
 import userRouter from "./api/routes/user.route";
 import authRouter from "./api/routes/auth.route";
 import orderRouter from "./api/routes/order.route";
@@ -41,6 +41,7 @@ app.use(
 );
 app.use(express.json({ limit: "50mb" }));
 
+app.use(mongoSanitize());
 // Session middleware for Passport
 app.use(
   session({

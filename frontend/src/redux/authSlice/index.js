@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 const initialState = {
   user: null,
@@ -11,28 +12,39 @@ const initialState = {
 
 export const registerUser = createAsyncThunk(
   "auth/register",
-  async (formData) => {
-    const response = await axios.post(
-      `${import.meta.env.VITE_API_URL}auth/register`,
-      formData,
-      {
-        withCredentials: true,
-      }
-    );
-    return response.data;
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}auth/register`,
+        formData,
+        {
+          withCredentials: true,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { message: "Registration failed" });
+    }
   }
 );
 
-export const loginUser = createAsyncThunk("auth/login", async (formData) => {
-  const response = await axios.post(
-    `${import.meta.env.VITE_API_URL}auth/login`,
-    formData,
-    {
-      withCredentials: true,
+export const loginUser = createAsyncThunk(
+  "auth/login", 
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}auth/login`,
+        formData,
+        {
+          withCredentials: true,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { message: "Login failed" });
     }
-  );
-  return response.data;
-});
+  }
+);
 
 export const clearNotifications = createAsyncThunk(
   "auth/clearNotifications",
@@ -83,38 +95,59 @@ const authSlice = createSlice({
       state.token = null;
       state.isAuthenticated = false;
     },
+    clearError: (state) => {
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
     builder
       .addCase(registerUser.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload.success ? action.payload.user : null;
-        state.token = action.payload.success ? action.payload.token : null;
-        state.isAuthenticated = action.payload.success ? true : false;
+        if (action.payload.success) {
+          state.user = action.payload.user;
+          state.token = action.payload.token;
+          state.isAuthenticated = true;
+          state.error = null;
+        } else {
+          state.user = null;
+          state.token = null;
+          state.isAuthenticated = false;
+          state.error = action.payload.message || "Registration failed";
+        }
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false;
         state.user = null;
         state.isAuthenticated = false;
-        state.error = action.error.message;
+        state.error = action.payload?.message || action.error?.message || "Registration failed";
       })
       .addCase(loginUser.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload.success ? action.payload.user : null;
-        state.token = action.payload.success ? action.payload.token : null;
-        state.isAuthenticated = action.payload.success ? true : false;
+        if (action.payload.success) {
+          state.user = action.payload.user;
+          state.token = action.payload.token;
+          state.isAuthenticated = true;
+          state.error = null;
+        } else {
+          state.user = null;
+          state.token = null;
+          state.isAuthenticated = false;
+          state.error = action.payload.message || "Login failed";
+        }
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.user = null;
         state.isAuthenticated = false;
-        state.error = action.error.message;
+        state.error = action.payload?.message || action.error?.message || "Login failed";
       })
       .addCase(clearNotifications.fulfilled, (state) => {
         if (state.user) {
@@ -149,5 +182,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { setUserInfo, logOutUser } = authSlice.actions;
+export const { setUserInfo, logOutUser, clearError } = authSlice.actions;
 export default authSlice.reducer;
