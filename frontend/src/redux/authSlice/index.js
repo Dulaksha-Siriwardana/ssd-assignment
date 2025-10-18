@@ -63,6 +63,24 @@ export const clearNotifications = createAsyncThunk(
   }
 );
 
+// Check Google OAuth authentication status
+export const checkGoogleAuth = createAsyncThunk(
+  "auth/checkGoogleAuth",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}/api/google/user`,
+        {
+          withCredentials: true,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { message: "Not authenticated" });
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -138,6 +156,28 @@ const authSlice = createSlice({
       })
       .addCase(clearNotifications.rejected, (state, action) => {
         toast.error(action.payload || "Failed to clear notifications"); // Show error message if clearing fails
+      })
+      .addCase(checkGoogleAuth.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(checkGoogleAuth.fulfilled, (state, action) => {
+        state.loading = false;
+        if (action.payload.user) {
+          state.user = action.payload.user;
+          state.isAuthenticated = true;
+          state.token = "google-oauth-session"; // Placeholder for Google OAuth
+        } else {
+          state.user = null;
+          state.isAuthenticated = false;
+          state.token = null;
+        }
+      })
+      .addCase(checkGoogleAuth.rejected, (state, action) => {
+        state.loading = false;
+        state.user = null;
+        state.isAuthenticated = false;
+        state.token = null;
+        state.error = action.payload?.message || "Not authenticated";
       });
   },
 });

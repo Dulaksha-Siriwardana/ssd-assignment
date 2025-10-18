@@ -292,7 +292,7 @@ const authController = {
       res.status(200).json({ success: true, user: user, token: token });
     } catch (error) {
       logger.error(error.message);
-      res.status(500).json({ sucess: false, message: "Internal server error" });
+      res.status(500).json({ success: false, message: "Internal server error" });
     }
   },
 
@@ -312,15 +312,15 @@ const authController = {
 const processReferral = async (referralToken, referredEmail) => {
   try {
     // Find the referral using the token
-    const referral = await Referral.findOne({ token: referralToken });
+    const referral = await Referral.findOne({ token: String(referralToken) });
     if (referral) {
       const referrerEmail = referral.referrerEmail;
 
       // Find the referrer
-      const referrer = await User.findOne({ email: referrerEmail });
+      const referrer = await User.findOne({ email: String(referrerEmail) });
       if (referrer) {
         // Find the loyalty record for the referrer
-        const loyalty = await Loyalty.findOne({ email: referrerEmail });
+        const loyalty = await Loyalty.findOne({ email: String(referrerEmail) });
 
         if (loyalty) {
           // Add 40 points to the referrer's loyalty points

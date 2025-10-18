@@ -3,6 +3,7 @@ import User from "../models/user.model.js";
 import { validationResult } from "express-validator";
 import validator from 'validator';
 import bcrypt from "bcrypt";
+import mongoose from "mongoose";
 
 const sanitizeInput = (input) => {
   if (typeof input !== 'string') {
@@ -32,7 +33,7 @@ const userController = {
     }
   },
 
-  async getUserById(req, res) {
+async getUserById(req, res) {
     try {
       const { id } = req.params;
       
